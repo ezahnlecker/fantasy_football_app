@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { TrendingUp, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
 import PlayerCard from './PlayerCard';
 import { useESPN } from '../context/ESPNContext';
 
 const TrendingPlayers = () => {
   const { isConnected } = useESPN();
+
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      if (isConnected) {
+        try {
+          const response = await fetch('http://localhost:3001/api/players/top/QB');
+          const data = await response.json();
+          console.log('Player data:', data);
+        } catch (error) {
+          console.error('Error fetching players:', error);
+        }
+      }
+    };
+    
+    fetchPlayers();
+  }, [isConnected]);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">

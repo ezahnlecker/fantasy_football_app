@@ -6,13 +6,21 @@ export interface ESPNTeam {
   abbrev: string;
 }
 
-const API_BASE = '/api/espn';
+const API_BASE = 'http://localhost:3001/api';
 
 interface ESPNConfig {
   leagueId: string;
   seasonId: string;
   swid?: string;
   espnS2?: string;
+}
+
+function getCurrentWeek(): number {
+  const now = new Date();
+  const seasonStart = new Date('2024-09-05');
+  const msPerWeek = 1000 * 60 * 60 * 24 * 7;
+  const weeksPassed = Math.floor((now.getTime() - seasonStart.getTime()) / msPerWeek);
+  return Math.min(Math.max(1, weeksPassed + 1), 18);
 }
 
 class ESPNService {
@@ -24,7 +32,7 @@ class ESPNService {
 
   async checkHealth(): Promise<boolean> {
     try {
-      const response = await fetch('/api/health');
+      const response = await fetch(`${API_BASE}/health`);
       if (!response.ok) {
         throw new Error('Health check failed');
       }
@@ -38,7 +46,7 @@ class ESPNService {
 
   async validateConnection(): Promise<boolean> {
     try {
-      const response = await fetch(`${API_BASE}/validate`, {
+      const response = await fetch(`${API_BASE}/espn/validate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -67,7 +75,7 @@ class ESPNService {
       ...(this.config.espnS2 && { espnS2: this.config.espnS2 })
     });
 
-    const response = await fetch(`${API_BASE}/teams?${params}`);
+    const response = await fetch(`${API_BASE}/espn/teams?${params}`);
 
     if (!response.ok) {
       throw new Error('Failed to fetch teams');
@@ -75,20 +83,34 @@ class ESPNService {
     return response.json();
   }
 
-  async getTeamRoster(teamId: number): Promise<Player[]> {
+  async getTeamRoster(teamId: number, week?: number): Promise<Player[]> {
+    console.log('Fetching roster for team:', teamId, 'week:', week, 'with config:', this.config);
+    
     const params = new URLSearchParams({
       leagueId: this.config.leagueId,
       seasonId: this.config.seasonId,
       ...(this.config.swid && { swid: this.config.swid }),
-      ...(this.config.espnS2 && { espnS2: this.config.espnS2 })
+      ...(this.config.espnS2 && { espnS2: this.config.espnS2 }),
+      week: String(week || getCurrentWeek())
     });
 
-    const response = await fetch(`${API_BASE}/roster/${teamId}?${params}`);
+    const url = `${API_BASE}/espn/roster/${teamId}?${params}`;
+    console.log('Request URL:', url);
 
+    const response = await fetch(url);
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Roster fetch failed:', errorData);
       throw new Error('Failed to fetch roster');
     }
-    return response.json();
+    
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      console.error('Invalid roster data:', data);
+      throw new Error('Invalid roster data received');
+    }
+    
+    return data;
   }
 }
 

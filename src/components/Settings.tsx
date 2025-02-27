@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Bell, Shield, Database, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Shield, Database, CheckCircle, XCircle, AlertCircle, Users2 } from 'lucide-react';
 import { createESPNService } from '../services/espnApi';
 import { useESPN } from '../context/ESPNContext';
 
 export default function Settings() {
-  const { isConnected, connect, disconnect, error } = useESPN();
+  const { 
+    isConnected, 
+    connect, 
+    disconnect, 
+    error, 
+    teams,
+    selectedTeamId,
+    selectTeam
+  } = useESPN();
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
   const [espnCredentials, setEspnCredentials] = useState({
     leagueId: '',
@@ -12,6 +20,8 @@ export default function Settings() {
     swid: '',
     espnS2: ''
   });
+
+  console.log('Teams in Settings:', teams);
 
   // Check server health on component mount
   useEffect(() => {
@@ -44,6 +54,19 @@ export default function Settings() {
       espnCredentials.swid,
       espnCredentials.espnS2
     );
+  };
+
+  const handleTeamSelect = async (teamId: number) => {
+    try {
+      console.log('Selecting team with ID:', teamId);
+      const selectedTeam = teams.find(t => t.id === teamId);
+      console.log('Team data:', selectedTeam);
+      
+      await selectTeam(teamId);
+      console.log('Team selection successful');
+    } catch (error) {
+      console.error('Failed to select team:', error);
+    }
   };
 
   return (
@@ -207,6 +230,33 @@ export default function Settings() {
           </label>
         </div>
       </div>
+
+      {isConnected && teams?.length > 0 && (
+        <div className="mt-6 border-t pt-6">
+          <h3 className="font-semibold text-gray-700 flex items-center space-x-2 mb-4">
+            <Users2 className="w-4 h-4" />
+            <span>Select Your Team</span>
+            {selectedTeamId && teams && (
+              <span className="text-sm text-green-600">
+                (Current: {teams.find(t => t.id === selectedTeamId)?.name})
+              </span>
+            )}
+          </h3>
+          
+          <select
+            value={selectedTeamId || ''}
+            onChange={(e) => handleTeamSelect(Number(e.target.value))}
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">Select a team...</option>
+            {Array.isArray(teams) && teams.map(team => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

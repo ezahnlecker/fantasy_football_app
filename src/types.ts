@@ -3,13 +3,14 @@ export interface Player {
   name: string;
   position: 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DST';
   team: string;
+  status: 'Active' | 'Bench' | 'Injured Reserve';
   opponent?: string;
   opponentRank?: number;
   projectedPoints: number;
-  seasonRank?: number;
-  trend?: number;
+  actualPoints: number;
+  injuryStatus?: string;
+  lineupSlot?: string;
   photoUrl?: string;
-  status: 'active' | 'injured' | 'questionable';
 }
 
 export interface TradeAnalysis {
@@ -25,4 +26,18 @@ export interface LineupRecommendation {
   starters: Player[];
   bench: Player[];
   reasoning: string;
+}
+
+export interface ESPNTeam {
+    id: number;
+    name: string;
+    abbrev: string;
+    record: string;
+    pointsFor: number;
+    pointsAgainst: number;
+    winStreak: number;
+    rank: number;
+    logo?: string;
+    wins: number;
+    losses: number;
 }
